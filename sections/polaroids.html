@@ -15,8 +15,8 @@
 
         body {
             background-color: #000000;
-            height: 100vh;
-            width: 100vw;
+            height: 100vh; /* Fallback for older browsers */
+            height: 100dvh;
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -110,9 +110,11 @@
         /* Next Chapter Button */
         .next-page-btn {
             position: fixed;
-            bottom: 35px;
+            /* FIX: Pushes the button up dynamically based on the phone's UI */
+            bottom: calc(40px + env(safe-area-inset-bottom)); 
             left: 50%;
             transform: translateX(-50%);
+            /* ... keep all the rest of your button styling exactly the same ... */
             background: rgba(255, 51, 102, 0.1);
             color: #ffffff;
             border: 1px solid rgba(255, 51, 102, 0.4);
