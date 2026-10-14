@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Polaroids & Train Transition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000000;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            background: radial-gradient(circle at center, #1a1a24 0%, #000000 70%);
+            user-select: none;
+        }
+
+        .hint-text {
+            position: absolute;
+            top: 40px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Polaroid Container */
+        .polaroid-container {
+            position: absolute;
+            width: 240px;
+            height: 290px;
+            cursor: grab;
+            perspective: 1000px; 
+            will-change: transform;
+        }
+
+        .polaroid-container:active {
+            cursor: grabbing;
+        }
+
+        .polaroid-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .polaroid-container.flipped .polaroid-inner {
+            transform: rotateY(180deg);
+        }
+
+        .polaroid-front, .polaroid-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: #ffffff;
+            border-radius: 4px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.3);
+            padding: 12px 12px 40px 12px;
+        }
+
+        .polaroid-front {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .photo-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: #2a2a35; 
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .polaroid-back {
+            transform: rotateY(180deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #fdfbf7; 
+        }
+
+        .handwriting {
+            font-family: 'Caveat', cursive;
+            font-size: 1.6rem;
+            color: #1a1a24;
+            text-align: center;
+            line-height: 1.4;
+            transform: rotate(-2deg); 
+        }
+
+        /* Next Chapter Button */
+        .next-page-btn {
+            position: fixed;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 51, 102, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 51, 102, 0.4);
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 1s ease;
+        }
+
+        .next-page-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .next-page-btn:hover, .next-page-btn:active {
+            background: rgba(255, 51, 102, 0.25);
+            border-color: #ff3366;
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.5);
+            transform: translateX(-50%) scale(1.03);
+        }
+
+        #transitionCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hint-text" id="hint">Drag to move • Double tap to flip</div>
+    <button class="next-page-btn" id="nextPageBtn">Next Chapter &rarr;</button>
+    <canvas id="transitionCanvas"></canvas>
+
+    <!-- Polaroids 1 to 10 -->
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo1.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">The day my whole world changed.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo2.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">I could look at this smile forever.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo3.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">You & Me.<br>An infinite loop.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo4.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">My favorite person ❤️</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo5.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">Lost in your eyes.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo6.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">One of my favorite memories.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo7.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">You always know how to make me laugh.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo8.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">Our little adventures.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo9.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">You are my peace.</div></div></div></div>
+    <div class="polaroid-container"><div class="polaroid-inner"><div class="polaroid-front"><div class="photo-placeholder" style="background-image: url('../assets/photo10.jpeg');"></div></div><div class="polaroid-back"><div class="handwriting">To a million more memories together.</div></div></div></div>
+
+    <script>
+        const polaroids = document.querySelectorAll('.polaroid-container');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const hintText = document.getElementById('hint');
+        const canvas = document.getElementById('transitionCanvas');
+        const ctx = canvas.getContext('2d');
+        let highestZIndex = 10;
+
+        setTimeout(() => { nextPageBtn.classList.add('visible'); }, 10000);
+
+        polaroids.forEach(polaroid => {
+            const randomX = (window.innerWidth / 2) + (Math.random() * 300 - 150) - 120;
+            const randomY = (window.innerHeight / 2) + (Math.random() * 200 - 100) - 145;
+            const randomRotate = Math.floor(Math.random() * 40) - 20;
+
+            polaroid.style.left = `${randomX}px`;
+            polaroid.style.top = `${randomY}px`;
+            polaroid.style.transform = `rotate(${randomRotate}deg)`;
+            polaroid.style.zIndex = highestZIndex++;
+
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            const startDrag = (e) => {
+                if (nextPageBtn.classList.contains('animating')) return;
+                isDragging = true;
+                polaroid.style.zIndex = highestZIndex++;
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                startX = clientX; startY = clientY;
+                initialLeft = parseInt(polaroid.style.left, 10);
+                initialTop = parseInt(polaroid.style.top, 10);
+            };
+
+            const drag = (e) => {
+                if (!isDragging) return;
+                e.preventDefault(); 
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                polaroid.style.left = `${initialLeft + (clientX - startX)}px`;
+                polaroid.style.top = `${initialTop + (clientY - startY)}px`;
+            };
+
+            const endDrag = () => { isDragging = false; };
+
+            polaroid.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('mouseup', endDrag);
+            polaroid.addEventListener('touchstart', startDrag, {passive: false});
+            window.addEventListener('touchmove', drag, {passive: false});
+            window.addEventListener('touchend', endDrag);
+
+            polaroid.addEventListener('dblclick', () => { polaroid.classList.toggle('flipped'); });
+        });
+
+        // --- SLOW TRAIN + FAST BURST TRANSITION ---
+        nextPageBtn.addEventListener('click', () => {
+            if (nextPageBtn.classList.contains('animating')) return;
+            nextPageBtn.classList.add('animating');
+            nextPageBtn.style.opacity = 0;
+            hintText.style.opacity = 0;
+
+            const centerY = (window.innerHeight / 2) - 145;
+            
+            // Step 1: Smoothly gather into the line (slower, cinematic alignment)
+            polaroids.forEach((polaroid, index) => {
+                polaroid.classList.remove('flipped');
+                const targetX = -350 + (index * 130);
+                const currentLeft = parseInt(polaroid.style.left, 10) || 0;
+                const currentTop = parseInt(polaroid.style.top, 10) || 0;
+
+                const dx = targetX - currentLeft;
+                const dy = centerY - currentTop;
+
+                polaroid.style.transition = 'transform 1.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                polaroid.style.transform = `translate(${dx}px, ${dy}px) rotate(0deg)`;
+                polaroid.style.zIndex = 100 + index;
+            });
+
+            // Step 2: Graceful, smooth train glide across the screen (takes 1.8 seconds so it's fully visible)
+            setTimeout(() => {
+                polaroids.forEach((polaroid, index) => {
+                    const currentLeft = parseInt(polaroid.style.left, 10) || 0;
+                    const currentTop = parseInt(polaroid.style.top, 10) || 0;
+                    const finalX = window.innerWidth + 500 + (index * 130);
+                    
+                    const dx = finalX - currentLeft;
+                    const dy = centerY - currentTop;
+
+                    polaroid.style.transition = 'transform 1.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                    polaroid.style.transform = `translate(${dx}px, ${dy}px) rotate(0deg)`;
+                });
+            }, 1500);
+
+            // Step 3: Instantaneous, fast burst right as the train clears the screen, jumping straight to finale
+            setTimeout(() => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                let particles = [];
+                const cx = window.innerWidth / 2;
+                const cy = window.innerHeight / 2;
+
+                for (let i = 0; i < 400; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 40 + 15; // Extremely fast burst
+                    particles.push({
+                        x: cx, y: cy,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        color: Math.random() > 0.5 ? '#ff3366' : '#ffffff',
+                        size: Math.random() * 6 + 2,
+                        alpha: 1.0,
+                        decay: Math.random() * 0.05 + 0.02 // Fades out rapidly for snappy timing
+                    });
+                }
+
+                function burstLoop() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'rgba(3, 3, 5, 0.5)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    let active = false;
+                    particles.forEach(p => {
+                        p.x += p.vx; p.y += p.vy;
+                        p.alpha -= p.decay;
+                        if (p.alpha > 0) active = true;
+
+                        ctx.globalAlpha = Math.max(0, p.alpha);
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                    if (active) {
+                        requestAnimationFrame(burstLoop);
+                    } else {
+                        window.parent.postMessage('nextPage', '*');
+                    }
+                }
+                burstLoop();
+
+            }, 3200); // Triggers right as the train finishes crossing
+        });
+    </script>
+</body>
+</html>

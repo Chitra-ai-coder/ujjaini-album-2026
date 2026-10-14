@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Gravity Connection</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Animated Deep Cosmic Background */
+            background: linear-gradient(135deg, #030305 0%, #0d0514 50%, #030305 100%);
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .prompt {
+            position: absolute;
+            top: 5%; 
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
+            pointer-events: none;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 2s ease forwards 0.5s;
+            width: 100%;
+        }
+
+        .prompt-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #ff3366;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 8px;
+            font-style: normal;
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
+        }
+
+        /* Full Screen Cinematic Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 20;
+            background: radial-gradient(circle at center, rgba(20, 20, 25, 0.9) 0%, rgba(5, 5, 10, 0.98) 100%);
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 10%;
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+            transition: all 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .modal-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #33ccff;
+            letter-spacing: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 30px;
+        }
+
+        .modal-content {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem; 
+            line-height: 1.8;
+            color: #e5e7eb;
+            max-width: 600px;
+            margin-bottom: 50px;
+        }
+
+        .next-chapter-btn {
+            width: 100%;
+            max-width: 320px; 
+            padding: 18px 0;
+            border-radius: 50px;
+            background: rgba(51, 204, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(51, 204, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .next-chapter-btn:hover, .next-chapter-btn:active {
+            background: #33ccff;
+            box-shadow: 0 10px 40px rgba(51, 204, 255, 0.5);
+            transform: scale(1.03);
+            color: #000;
+        }
+
+        @media (max-width: 480px) {
+            .modal-content { font-size: 1.25rem; line-height: 1.7; }
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes bgFlash { 
+            0% { background-color: #ffffff; }
+            30% { background-color: #1a1a2e; }
+            100% { background-color: #030305; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="prompt" id="promptText">
+        Bring us together.
+        <div class="prompt-sub">Drag the pink orb through the neon maze</div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="modal" id="messageModal">
+        <span class="modal-tag">SYSTEM OVERRIDE</span>
+        <div class="modal-content">
+            Some connections are simply inevitable.<br><br>
+            No matter the distance or the obstacles, I will always find my way to you.
+        </div>
+        <button class="next-chapter-btn" id="nextChapterBtn">Next Chapter &rarr;</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const promptText = document.getElementById('promptText');
+        const messageModal = document.getElementById('messageModal');
+        const nextChapterBtn = document.getElementById('nextChapterBtn');
+
+        let width, height;
+        let gameState = 'playing'; 
+        let particles = [];
+        let ambientParticles = [];
+        let walls = [];
+
+        const COLOR_UJJAINI = '#ff3366'; // Pink
+        const COLOR_CHITRABHANU = '#33ccff'; // Blue
+
+        let player = { x: 0, y: 0, radius: 18, isDragging: false, history: [] };
+        let target = { x: 0, y: 0, radius: 22 };
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+
+            player.x = width / 2;
+            player.y = height * 0.9; 
+            
+            target.x = width / 2;
+            target.y = height * 0.22; 
+
+            const wallHeight = 8;
+            walls = [
+                { x: 0, y: height * 0.72, w: width * 0.75, h: wallHeight },
+                { x: width * 0.25, y: height * 0.52, w: width * 0.75, h: wallHeight },
+                { x: 0, y: height * 0.35, w: width * 0.75, h: wallHeight },
+            ];
+            
+            initAmbient();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function initAmbient() {
+            ambientParticles = [];
+            for(let i=0; i<60; i++) {
+                ambientParticles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2.5 + 0.5,
+                    speedY: Math.random() * -0.6 - 0.2,
+                    alpha: Math.random() * 0.7 + 0.2
+                });
+            }
+        }
+
+        function getMousePos(e) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX, y: clientY };
+        }
+
+        function startDrag(e) {
+            if (gameState !== 'playing') return;
+            const pos = getMousePos(e);
+            const dist = Math.hypot(pos.x - player.x, pos.y - player.y);
+            if (dist < player.radius * 4) { 
+                player.isDragging = true;
+            }
+        }
+
+        function checkCircleRect(cx, cy, r, rect) {
+            let testX = cx;
+            let testY = cy;
+            if (cx < rect.x) testX = rect.x;
+            else if (cx > rect.x + rect.w) testX = rect.x + rect.w;
+            if (cy < rect.y) testY = rect.y;
+            else if (cy > rect.y + rect.h) testY = rect.y + rect.h;
+            
+            return Math.hypot(cx - testX, cy - testY) <= r;
+        }
+
+        function drag(e) {
+            if (!player.isDragging || gameState !== 'playing') return;
+            const pos = getMousePos(e);
+            
+            let targetX = Math.max(player.radius, Math.min(width - player.radius, pos.x));
+            let targetY = Math.max(player.radius, Math.min(height - player.radius, pos.y));
+
+            let dx = targetX - player.x;
+            let dy = targetY - player.y;
+            let dist = Math.hypot(dx, dy);
+            
+            let steps = Math.ceil(dist / 4); 
+            if(steps === 0) return;
+
+            let stepX = dx / steps;
+            let stepY = dy / steps;
+
+            for(let i = 0; i < steps; i++) {
+                let nextX = player.x + stepX;
+                let nextY = player.y + stepY;
+                
+                let collisionX = false;
+                let collisionY = false;
+
+                for (let w of walls) {
+                    if (checkCircleRect(nextX, player.y, player.radius, w)) collisionX = true;
+                    if (checkCircleRect(player.x, nextY, player.radius, w)) collisionY = true;
+                }
+
+                if (!collisionX) player.x = nextX;
+                if (!collisionY) player.y = nextY;
+                if (collisionX && collisionY) break; 
+            }
+
+            player.history.push({x: player.x, y: player.y});
+            if(player.history.length > 40) player.history.shift();
+
+            checkMagneticPull();
+        }
+
+        function endDrag() { player.isDragging = false; }
+
+        window.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchstart', startDrag, { passive: false });
+        window.addEventListener('touchmove', (e) => { e.preventDefault(); drag(e); }, { passive: false });
+        window.addEventListener('touchend', endDrag);
+
+        function checkMagneticPull() {
+            const dist = Math.hypot(target.x - player.x, target.y - player.y);
+            if (dist < 150 && gameState === 'playing' && player.y < walls[2].y) {
+                gameState = 'magnetic';
+                player.isDragging = false;
+                promptText.style.opacity = 0; 
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 35 + 5; 
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.01 + 0.003; 
+                this.size = Math.random() * 6 + 2;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.vx *= 0.95; this.vy *= 0.95;
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function triggerExplosion() {
+            gameState = 'exploded';
+            document.body.style.animation = 'bgFlash 2.5s ease-out forwards';
+            
+            for(let i = 0; i < 400; i++) particles.push(new Particle(player.x, player.y, COLOR_UJJAINI));
+            for(let i = 0; i < 400; i++) particles.push(new Particle(player.x, player.y, COLOR_CHITRABHANU));
+            for(let i = 0; i < 200; i++) particles.push(new Particle(player.x, player.y, '#ffffff'));
+
+            setTimeout(() => { messageModal.classList.add('active'); }, 2000);
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Ambient Dust Particles
+            ambientParticles.forEach(p => {
+                p.y += p.speedY;
+                if(p.y < 0) p.y = height;
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffffff';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            if (gameState === 'playing' || gameState === 'magnetic') {
+                
+                // Draw Gorgeous Neon Glass Walls
+                walls.forEach((w, index) => {
+                    const wallColor = index % 2 === 0 ? 'rgba(255, 51, 102, ' : 'rgba(51, 204, 255, ';
+                    
+                    // Outer glow field
+                    ctx.fillStyle = wallColor + '0.1)';
+                    ctx.shadowColor = index % 2 === 0 ? COLOR_UJJAINI : COLOR_CHITRABHANU;
+                    ctx.shadowBlur = 25;
+                    ctx.fillRect(w.x, w.y - 4, w.w, w.h + 8);
+                    
+                    // Core bright neon bar
+                    ctx.fillStyle = wallColor + '0.9)';
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(w.x, w.y, w.w, w.h);
+                    ctx.shadowBlur = 0;
+                });
+
+                if (gameState === 'magnetic') {
+                    const midX = (player.x + target.x) / 2;
+                    const midY = (player.y + target.y) / 2;
+                    player.x += (midX - player.x) * 0.08;
+                    player.y += (midY - player.y) * 0.08;
+                    target.x += (midX - target.x) * 0.08;
+                    target.y += (midY - target.y) * 0.08;
+
+                    player.history.push({x: player.x, y: player.y});
+                    if(player.history.length > 40) player.history.shift();
+
+                    if (Math.hypot(target.x - player.x, target.y - player.y) < 10) {
+                        triggerExplosion();
+                    }
+                }
+
+                // Tapered Light Trail for Player Orb
+                if (player.history.length > 1) {
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowColor = COLOR_UJJAINI;
+                    ctx.shadowBlur = 20;
+                    
+                    for (let i = 0; i < player.history.length - 1; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(player.history[i].x, player.history[i].y);
+                        ctx.lineTo(player.history[i+1].x, player.history[i+1].y);
+                        
+                        const thickness = (i / player.history.length) * player.radius;
+                        ctx.lineWidth = Math.max(1, thickness);
+                        const alpha = (i / player.history.length) * 0.6;
+                        ctx.strokeStyle = `rgba(255, 51, 102, ${alpha})`;
+                        ctx.stroke();
+                    }
+                    ctx.shadowBlur = 0;
+                }
+
+                // Draw Target Orb (Chitrabhanu - Blue with pulsing aura)
+                ctx.beginPath(); ctx.arc(target.x, target.y, target.radius + 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(51, 204, 255, 0.2)';
+                ctx.fill();
+
+                ctx.beginPath(); ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+                ctx.fillStyle = COLOR_CHITRABHANU;
+                ctx.shadowColor = COLOR_CHITRABHANU;
+                ctx.shadowBlur = gameState === 'magnetic' ? 60 : 35 + Math.sin(Date.now() * 0.006) * 12;
+                ctx.fill();
+
+                // Draw Player Orb (Ujjaini - Pink with pulsing aura)
+                ctx.beginPath(); ctx.arc(player.x, player.y, player.radius + 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 51, 102, 0.2)';
+                ctx.fill();
+
+                ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fillStyle = COLOR_UJJAINI;
+                ctx.shadowColor = COLOR_UJJAINI;
+                ctx.shadowBlur = player.isDragging || gameState === 'magnetic' ? 65 : 35;
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+                
+                if(!player.isDragging && gameState === 'playing' && player.history.length > 0) {
+                    player.history.shift();
+                }
+            }
+
+            if (gameState === 'exploded') {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].draw();
+                    if (particles[i].life <= 0) particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        nextChapterBtn.addEventListener('click', () => {
+            window.parent.postMessage('nextPage', '*');
+        });
+    </script>
+</body>
+</html>

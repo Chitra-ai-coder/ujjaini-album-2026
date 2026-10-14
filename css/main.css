@@ -1,0 +1,30 @@
+.next-page-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 14px 40px;
+    border-radius: 50px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 1s ease;
+}
+
+.next-page-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.next-page-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+}

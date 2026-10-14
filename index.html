@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For Ujjaini</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000000;
+            overflow: hidden; /* Locks the screen, no scrolling */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #albumFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            transition: opacity 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- The Window that loads your sections -->
+    <iframe id="albumFrame" src="sections/intro.html"></iframe>
+
+    <script>
+        // Your album playlist
+        const pages = [
+            "sections/intro.html",
+             "sections/gravity.html",
+            "sections/heartbeat.html", 
+            "sections/polaroids.html",  
+            "sections/finale.html"  
+        ];
+
+        let currentPageIndex = 0;
+        const frame = document.getElementById('albumFrame');
+
+        function loadPage(index) {
+            if (index >= 0 && index < pages.length) {
+                currentPageIndex = index;
+                
+                // Smooth fade out
+                frame.style.opacity = 0;
+                
+                setTimeout(() => {
+                    frame.src = pages[currentPageIndex];
+                    // Smooth fade back in
+                    frame.style.opacity = 1;
+                }, 800); 
+            }
+        }
+
+        // Listens for the 'nextPage' signal from your section files
+        window.addEventListener('message', (event) => {
+            if (event.data === 'nextPage') {
+                loadPage(currentPageIndex + 1);
+            }
+        });
+    </script>
+</body>
+</html>
